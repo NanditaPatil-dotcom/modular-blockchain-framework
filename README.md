@@ -1,14 +1,21 @@
 # modular-blockchain-framework
-Ex : Y1 giving 10 bucks to Y2
-Step 1: Y1 creates TX
+
+## Transaction Flow Example
+**Example: Y1 giving 10 bucks to Y2**
+
+### Step 1: Y1 creates TX
+```
 ┌───────────────────────────────┐
-│ TX: {from: Y1, to: Y2,        │   
+│ TX: {from: Y1, to: Y2,        │
 │     amount: 10, nonce: 23,    │
 │     signature: 0xabc123...}   │
 └───────────────────────────────┘
                │
                ▼
-Step 2: TX sent to Y1's node
+```
+
+### Step 2: TX sent to Y1's node
+```
 ┌───────────────────────────────┐
 │ Node checks:                  │
 │ - Balance >= 10?              │
@@ -17,14 +24,20 @@ Step 2: TX sent to Y1's node
 └───────────────────────────────┘
                │ Valid
                ▼
-Step 3: Node adds TX to mempool
+```
+
+### Step 3: Node adds TX to mempool
+```
 ┌───────────────────────────────┐
 │ Pending TXs collected for     │
 │ next block                    │
 └───────────────────────────────┘
                │
                ▼
-Step 4: Block creation & consensus
+```
+
+### Step 4: Block creation & consensus
+```
 ┌───────────────────────────────┐
 │ New Block:                    │
 │ - Previous hash               │
@@ -37,7 +50,10 @@ Step 4: Block creation & consensus
 └───────────────────────────────┘
                │
                ▼
-Step 5: Block broadcast to peers
+```
+
+### Step 5: Block broadcast to peers
+```
 ┌───────────────────────────────┐
 │ Other nodes receive block     │
 │ Each node verifies:           │
@@ -46,10 +62,14 @@ Step 5: Block broadcast to peers
 └───────────────────────────────┘
                │
                ▼
-Step 6: Block added to chain
+```
+
+### Step 6: Block added to chain
+```
 ┌───────────────────────────────┐
 │ All nodes now have updated    │
 │ state:                        │
 │ Y1 balance: -10               │
 │ Y2 balance: +10               │
 └───────────────────────────────┘
+```
