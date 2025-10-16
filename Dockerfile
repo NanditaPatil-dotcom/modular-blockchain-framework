@@ -1,22 +1,26 @@
-FROM golang:1.21-alpine AS builder
+# -------- STAGE 1: Build the Go binary --------
+FROM golang:1.21-alpine AS build
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+# Copy go.mod only (skip go.sum if missing)
+COPY go.mod ./
+
+# Download dependencies (will be empty if none)
 RUN go mod download
 
+# Copy all source code
 COPY . .
 
-RUN go build -o node ./cmd/node
+# Build your node binary
+RUN go build -o /modular-blockchain-framework ./cmd/node
 
+# -------- STAGE 2: Run minimal image --------
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+COPY --from=build /modular-blockchain-framework /modular-blockchain-framework
 
-WORKDIR /root/
-
-COPY --from=builder /app/node .
-
+WORKDIR /
 EXPOSE 8080
 
-CMD ["./node"]
+CMD ["/modular-blockchain-framework"]
