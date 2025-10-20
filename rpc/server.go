@@ -2,8 +2,12 @@ package rpc
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"modular-blockchain-framework/core"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func enableCORS(next http.Handler) http.Handler {
@@ -20,11 +24,65 @@ func enableCORS(next http.Handler) http.Handler {
 }
 
 type RPCServer struct {
-	chain *core.Chain
+	chain   *core.Chain
+	mempool *core.Mempool
 }
 
-func New(chain *core.Chain) *RPCServer {
-	return &RPCServer{chain: chain}
+func New(chain *core.Chain, mempool *core.Mempool) *RPCServer {
+	return &RPCServer{chain: chain, mempool: mempool}
+}
+
+func VerifySignature(address string, message []byte, sigHex string) (bool, error) {
+	sig, err := hexutil.Decode(sigHex)
+	if err != nil {
+		return false, err
+	}
+	pubKey, err := crypto.Ecrecover(crypto.Keccak256(message), sig)
+	if err != nil {
+		return false, err
+	}
+	pk, err := crypto.UnmarshalPubkey(pubKey)
+	if err != nil {
+		return false, err
+	}
+	recoveredAddr := crypto.PubkeyToAddress(*pk).Hex()
+	return strings.EqualFold(recoveredAddr, address), nil
+}
+
+func (r *RPCServer) ValidateTx(tx *core.Transaction) error {
+	// Check balance
+	balance := r.chain.GetBalance(tx.From)
+	if balance < tx.Amount {
+		return fmt.Errorf("insufficient balance: have %d, need %d", balance, tx.Amount)
+	}
+
+	// Check amount is positive
+	if tx.Amount <= 0 {
+		return fmt.Errorf("amount must be positive")
+	}
+
+	// Check nonce (prevent replay attacks)
+	currentNonce := r.chain.GetNonce(tx.From)
+	if tx.Nonce <= currentNonce {
+		return fmt.Errorf("invalid nonce: got %d, expected > %d", tx.Nonce, currentNonce)
+	}
+
+	// Verify signature
+	if tx.Signature == "" {
+		return fmt.Errorf("missing signature")
+	}
+
+	// Create message for signing: JSON.stringify({from,to,amount,nonce})
+	message := fmt.Sprintf(`{"from":"%s","to":"%s","amount":%d,"nonce":%d}`, tx.From, tx.To, tx.Amount, tx.Nonce)
+	valid, err := VerifySignature(tx.From, []byte(message), tx.Signature)
+	if err != nil {
+		return fmt.Errorf("signature verification error: %v", err)
+	}
+	if !valid {
+		return fmt.Errorf("invalid signature")
+	}
+
+	return nil
 }
 
 func (r *RPCServer) Start(addr string) {
@@ -46,14 +104,62 @@ func (r *RPCServer) Start(addr string) {
 	// submit transaction
 	mux.HandleFunc("/submitTx", func(w http.ResponseWriter, req *http.Request) {
 		var tx core.Transaction
-		_ = json.NewDecoder(req.Body).Decode(&tx)
-		// naive: apply immediately via token module or mempool
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		if err := json.NewDecoder(req.Body).Decode(&tx); err != nil {
+			http.Error(w, "invalid body", 400)
+			return
+		}
+		// server-side: verify signature + nonce + balance (function ValidateTx)
+		if err := r.ValidateTx(&tx); err != nil {
+			http.Error(w, err.Error(), 400)
+			return
+		}
+		r.mempool.Push(tx)
+		json.NewEncoder(w).Encode(map[string]string{"status": "accepted"})
+	})
+
+	// get mempool
+	mux.HandleFunc("/mempool", func(w http.ResponseWriter, req *http.Request) {
+		r.mempool.mu.Lock()
+		txs := make([]core.Transaction, len(r.mempool.txs))
+		copy(txs, r.mempool.txs)
+		r.mempool.mu.Unlock()
+		json.NewEncoder(w).Encode(txs)
 	})
 
 	// health endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
+	})
+
+	// healthz endpoint for load balancers/health checks
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	})
+
+	// broadcast block (for inter-node communication)
+	mux.HandleFunc("/broadcastBlock", func(w http.ResponseWriter, req *http.Request) {
+		var block core.Block
+		if err := json.NewDecoder(req.Body).Decode(&block); err != nil {
+			http.Error(w, "invalid block", 400)
+			return
+		}
+		// Add block to chain (basic implementation)
+		r.chain.AddBlock(block)
+		json.NewEncoder(w).Encode(map[string]string{"status": "received"})
+	})
+
+	// receive block (for inter-node communication)
+	mux.HandleFunc("/receiveBlock", func(w http.ResponseWriter, req *http.Request) {
+		var block core.Block
+		if err := json.NewDecoder(req.Body).Decode(&block); err != nil {
+			http.Error(w, "invalid block", 400)
+			return
+		}
+		// Add block to chain
+		r.chain.AddBlock(block)
+		json.NewEncoder(w).Encode(map[string]string{"status": "accepted"})
 	})
 
 	// listen on all interfaces (Docker-friendly)

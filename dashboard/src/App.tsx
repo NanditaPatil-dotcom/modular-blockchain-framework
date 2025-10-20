@@ -2,6 +2,9 @@ import { useState } from 'react'
 import BalancesCard from './components/BalancesCard'
 import SendTransactionForm from './components/SendTransactionForm'
 import BlocksList from './components/BlocksList'
+import WalletCreator from './components/WalletCreator'
+import MempoolMonitor from './components/MempoolMonitor'
+import Terminal from './components/Terminal'
 
 function App() {
   const [rpcUrl, setRpcUrl] = useState(import.meta.env.VITE_RPC_BASE_URL || 'http://localhost:8080')
@@ -9,7 +12,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">Modular Blockchain</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">Modular Blockchain Dashboard</h1>
         <div className="flex items-center gap-2">
           <label htmlFor="rpc-url" className="text-sm font-medium text-gray-700">RPC Base URL:</label>
           <input
@@ -23,9 +26,12 @@ function App() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <WalletCreator />
         <BalancesCard rpcUrl={rpcUrl} />
         <SendTransactionForm rpcUrl={rpcUrl} />
+        <MempoolMonitor rpcUrl={rpcUrl} />
         <BlocksList rpcUrl={rpcUrl} />
+        <Terminal />
       </div>
     </div>
   )

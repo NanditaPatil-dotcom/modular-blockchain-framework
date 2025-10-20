@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { signTransaction } from '../utils/crypto'
 
 interface TransactionData {
   from: string
@@ -6,6 +7,11 @@ interface TransactionData {
   amount: string
   nonce: string
   signature: string
+}
+
+interface Wallet {
+  address: string
+  privateKey: string
 }
 
 export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
@@ -16,6 +22,8 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     nonce: '',
     signature: ''
   })
+  const [wallet, setWallet] = useState<Wallet | null>(null)
+  const [privateKey, setPrivateKey] = useState('')
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
@@ -26,31 +34,57 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     }))
   }
 
-  const submitTransaction = async (e: React.FormEvent) => {
+  const loadWallet = () => {
+    const stored = localStorage.getItem('wallet')
+    if (stored) {
+      const parsedWallet = JSON.parse(stored)
+      setWallet(parsedWallet)
+      setFormData(prev => ({ ...prev, from: parsedWallet.publicKey }))
+    }
+  }
+
+  const signAndSubmitTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!wallet && !privateKey) {
+      setToast({ message: 'Please load a wallet or enter private key', type: 'error' })
+      return
+    }
+
     setLoading(true)
     setToast(null)
 
     try {
+      const from = wallet ? wallet.address : formData.from
+      const privKey = wallet ? wallet.privateKey : privateKey
+      const amount = parseFloat(formData.amount)
+      const nonce = parseInt(formData.nonce)
+
+      // Client-side signing only - private key never sent to server
+      const txPayload = { from, to: formData.to, amount, nonce }
+      const signature = await signTransaction(txPayload, privKey)
+
       const response = await fetch(`${rpcUrl}/submitTx`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: formData.from,
+          from,
           to: formData.to,
-          amount: parseFloat(formData.amount),
-          nonce: parseInt(formData.nonce),
-          signature: formData.signature
+          amount,
+          nonce,
+          signature
         })
       })
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || `HTTP ${response.status}`)
+      }
 
       setToast({ message: 'Transaction submitted successfully!', type: 'success' })
       setFormData({
-        from: '',
+        from: wallet ? wallet.address : '',
         to: '',
         amount: '',
         nonce: '',
@@ -66,26 +100,59 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     }
   }
 
-  const isFormValid = Object.values(formData).every(value => value.trim() !== '')
+  const isFormValid = (formData.to.trim() && formData.amount.trim() && formData.nonce.trim()) &&
+    (wallet || (formData.from.trim() && privateKey.trim()))
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4">Send Transaction</h2>
-      <form onSubmit={submitTransaction} className="space-y-4">
-        <div>
-          <label htmlFor="from" className="block text-sm font-medium text-gray-700 mb-1">
-            From
-          </label>
-          <input
-            id="from"
-            name="from"
-            type="text"
-            value={formData.from}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={loadWallet}
+          className="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 text-sm"
+        >
+          Load Saved Wallet
+        </button>
+        {wallet && <span className="ml-2 text-sm text-green-600">Wallet loaded</span>}
+      </div>
+      <form onSubmit={signAndSubmitTransaction} className="space-y-4">
+        {!wallet && (
+          <>
+            <div>
+              <label htmlFor="from" className="block text-sm font-medium text-gray-700 mb-1">
+                From (Address)
+              </label>
+              <input
+                id="from"
+                name="from"
+                type="text"
+                value={formData.from}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="privateKey" className="block text-sm font-medium text-gray-700 mb-1">
+                Private Key
+              </label>
+              <input
+                id="privateKey"
+                type="password"
+                value={privateKey}
+                onChange={(e) => setPrivateKey(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          </>
+        )}
+        {wallet && (
+          <div className="bg-gray-50 p-3 rounded">
+            <div className="text-sm text-gray-600">From: {wallet.address}</div>
+          </div>
+        )}
         <div>
           <label htmlFor="to" className="block text-sm font-medium text-gray-700 mb-1">
             To
@@ -124,20 +191,6 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
             name="nonce"
             type="number"
             value={formData.nonce}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="signature" className="block text-sm font-medium text-gray-700 mb-1">
-            Signature
-          </label>
-          <input
-            id="signature"
-            name="signature"
-            type="text"
-            value={formData.signature}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
