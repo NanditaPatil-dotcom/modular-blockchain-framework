@@ -119,10 +119,10 @@ func (r *RPCServer) Start(addr string) {
 
 	// get mempool
 	mux.HandleFunc("/mempool", func(w http.ResponseWriter, req *http.Request) {
-		r.mempool.mu.Lock()
-		txs := make([]core.Transaction, len(r.mempool.txs))
-		copy(txs, r.mempool.txs)
-		r.mempool.mu.Unlock()
+		r.mempool.Mu.RLock()
+		txs := make([]core.Transaction, len(r.mempool.Txs))
+		copy(txs, r.mempool.Txs)
+		r.mempool.Mu.RUnlock()
 		json.NewEncoder(w).Encode(txs)
 	})
 
