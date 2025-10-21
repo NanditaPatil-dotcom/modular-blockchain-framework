@@ -8,7 +8,7 @@ import Terminal from './components/Terminal'
 import { getBlocks, getMempool } from './lib/rpc'
 
 function App() {
-  const [rpcUrl, setRpcUrl] = useState(import.meta.env.VITE_RPC_BASE_URL || 'http://localhost:8080')
+  const [rpcUrl] = useState(import.meta.env.VITE_RPC_BASE_URL || 'http://localhost:8080')
   const [networkStats, setNetworkStats] = useState({
     nodes: 1,
     blocks: 0,

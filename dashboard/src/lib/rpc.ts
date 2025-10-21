@@ -23,7 +23,7 @@ export async function getBalance(address: string, rpcUrl?: string) {
   return callRPC(`/balance?addr=${encodeURIComponent(address)}`, undefined, rpcUrl)
 }
 
-export async function submitTransaction(tx: any, rpcUrl?: string) {
+export async function submitTransaction(tx: { from: string; to: string; amount: number; nonce: number; signature: string }, rpcUrl?: string) {
   return callRPC('/submitTx', {
     method: 'POST',
     body: JSON.stringify(tx),

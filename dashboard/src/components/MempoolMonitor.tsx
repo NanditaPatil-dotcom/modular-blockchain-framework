@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Transaction {
   id: string
@@ -14,7 +14,7 @@ export default function MempoolMonitor({ rpcUrl }: { rpcUrl: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
 
-  const fetchMempool = async () => {
+  const fetchMempool = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -27,13 +27,13 @@ export default function MempoolMonitor({ rpcUrl }: { rpcUrl: string }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [rpcUrl])
 
   useEffect(() => {
     fetchMempool()
     const interval = setInterval(fetchMempool, 2000) // Poll every 2 seconds
     return () => clearInterval(interval)
-  }, [rpcUrl])
+  }, [rpcUrl, fetchMempool])
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">

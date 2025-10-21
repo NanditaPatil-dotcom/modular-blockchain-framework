@@ -91,7 +91,8 @@ export default function Terminal() {
   }
 
   const executeSend = async (args: { to: string; amount: number; from: string; privateKey: string }) => {
-    let { to, amount, from, privateKey } = args
+    const { to, amount } = args
+    let { from, privateKey } = args
 
     if (!to || !amount) {
       throw new Error('Usage: send --to <address> --amount <number> [--from <address> --key <privateKey>]')

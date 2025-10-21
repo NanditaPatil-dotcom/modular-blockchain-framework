@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Transaction {
   id: string
@@ -24,7 +24,7 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
 
-  const fetchBlocks = async () => {
+  const fetchBlocks = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -37,13 +37,13 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [rpcUrl])
 
   useEffect(() => {
     fetchBlocks()
     const interval = setInterval(fetchBlocks, 3000) // More frequent updates
     return () => clearInterval(interval)
-  }, [rpcUrl])
+  }, [rpcUrl, fetchBlocks])
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
