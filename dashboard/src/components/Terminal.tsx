@@ -115,7 +115,11 @@ export default function Terminal() {
     const signature = await signTransaction(txPayload, privateKey)
 
     const result = await submitTransaction({ ...txPayload, signature })
-    return `Transaction submitted successfully: ${JSON.stringify(result)}`
+    return `✅ Transaction created
+🔍 Broadcasting to network...
+✅ Transaction verified
+⛓️  Added to mempool
+📦 TX Hash: ${signature.slice(0, 16)}...`
   }
 
   const executeBalance = async (address: string): Promise<string> => {
@@ -160,40 +164,49 @@ Examples:
   }
 
   return (
-    <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm">
-      <div className="mb-2 text-green-300">Blockchain Terminal v0.1</div>
+    <div className="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm border border-gray-700">
+      <div className="mb-2 text-green-300 font-semibold">🔗 Blockchain Terminal</div>
 
       <div
         ref={terminalRef}
-        className="h-64 overflow-y-auto mb-2 bg-gray-900 p-2 rounded"
+        className="h-64 overflow-y-auto mb-2 bg-black p-3 rounded border border-gray-600"
       >
         {history.map((item, index) => (
-          <div key={index} className="mb-1">
-            <div className="text-blue-400">$ {item.command}</div>
-            <div className={item.error ? 'text-red-400' : 'text-green-400'}>
-              {item.output}
+          <div key={index} className="mb-2">
+            <div className="text-blue-400 flex items-center gap-2">
+              <span>❯</span>
+              <span>{item.command}</span>
+            </div>
+            <div className={`ml-4 ${item.error ? 'text-red-400' : 'text-green-400'}`}>
+              {item.output.split('\n').map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
             </div>
           </div>
         ))}
         {loading && (
-          <div className="text-yellow-400">Executing...</div>
+          <div className="text-yellow-400 ml-4 animate-pulse">⏳ Processing transaction...</div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <span className="text-green-400">$</span>
+      <form onSubmit={handleSubmit} className="flex gap-2 items-center">
+        <span className="text-green-400">❯</span>
         <input
           ref={inputRef}
           type="text"
           value={currentCommand}
           onChange={(e) => setCurrentCommand(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent border-none outline-none text-green-400"
-          placeholder="Type 'help' for commands..."
+          className="flex-1 bg-transparent border-none outline-none text-green-400 placeholder-gray-500"
+          placeholder="send --to 0x... --amount 10"
           disabled={loading}
           autoFocus
         />
       </form>
+
+      <div className="mt-2 text-xs text-gray-400">
+        Type 'help' for available commands
+      </div>
     </div>
   )
 }

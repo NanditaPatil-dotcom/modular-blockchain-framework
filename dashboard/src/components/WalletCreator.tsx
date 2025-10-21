@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 
 interface Wallet {
@@ -9,6 +9,19 @@ interface Wallet {
 export default function WalletCreator() {
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    // Load existing wallet on component mount
+    const stored = localStorage.getItem('wallet')
+    if (stored) {
+      try {
+        const walletData = JSON.parse(stored)
+        setWallet(walletData)
+      } catch (error) {
+        console.error('Failed to load wallet:', error)
+      }
+    }
+  }, [])
 
   const generateWallet = async () => {
     setLoading(true)
@@ -34,15 +47,15 @@ export default function WalletCreator() {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Create Wallet</h2>
+    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+      <h2 className="text-xl font-semibold mb-4 text-white">💳 Create Wallet</h2>
       <div className="space-y-4">
         <button
           onClick={generateWallet}
           disabled={loading}
-          className="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
         >
-          {loading ? 'Generating...' : 'Generate New Wallet'}
+          {loading ? '🔄 Generating...' : '🆕 Generate New Wallet'}
         </button>
 
         {wallet && (
