@@ -51,16 +51,6 @@ function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label htmlFor="rpc-url" className="text-sm font-medium text-gray-300">RPC URL:</label>
-            <input
-              id="rpc-url"
-              type="text"
-              value={rpcUrl}
-              onChange={(e) => setRpcUrl(e.target.value)}
-              className="px-3 py-1 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-            />
-          </div>
         </div>
       </header>
 
