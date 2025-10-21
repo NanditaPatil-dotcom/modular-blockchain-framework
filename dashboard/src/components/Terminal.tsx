@@ -1,132 +1,154 @@
-import { useState, useRef, useEffect } from 'react'
-import { getBalance, submitTransaction } from '../lib/rpc'
-import { signTransaction } from '../utils/crypto'
+import { useState, useRef, useEffect } from 'react';
+import { Terminal as TerminalIcon } from 'lucide-react';
+import { getBalance, submitTransaction, addBalance } from '../lib/rpc';
+import { signTransaction } from '../utils/crypto';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CommandResult {
-  command: string
-  output: string
-  error?: boolean
+  command: string;
+  output: string;
+  error?: boolean;
+  timestamp: number;
 }
 
 export default function Terminal() {
-  const [history, setHistory] = useState<CommandResult[]>([])
-  const [currentCommand, setCurrentCommand] = useState('')
-  const [loading, setLoading] = useState(false)
-  const terminalRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [history, setHistory] = useState<CommandResult[]>([]);
+  const [currentCommand, setCurrentCommand] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [caretVisible, setCaretVisible] = useState(true);
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
-  }, [history])
+  }, [history]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCaretVisible(prev => !prev);
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   const addToHistory = (result: CommandResult) => {
-    setHistory(prev => [...prev, result])
-  }
+    setHistory(prev => [...prev, result]);
+  };
 
   const executeCommand = async (command: string) => {
-    const trimmed = command.trim()
-    if (!trimmed) return
+    const trimmed = command.trim();
+    if (!trimmed) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const result = await parseAndExecuteCommand(trimmed)
-      addToHistory({ command: trimmed, output: result })
+      const result = await parseAndExecuteCommand(trimmed);
+      addToHistory({ command: trimmed, output: result, timestamp: Date.now() });
     } catch (error) {
       addToHistory({
         command: trimmed,
         output: error instanceof Error ? error.message : 'Unknown error',
-        error: true
-      })
+        error: true,
+        timestamp: Date.now()
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const parseAndExecuteCommand = async (command: string): Promise<string> => {
-    const parts = command.split(/\s+/)
-    const cmd = parts[0].toLowerCase()
+    const parts = command.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
 
     switch (cmd) {
       case 'send': {
-        const args = parseSendArgs(parts.slice(1))
-        return await executeSend(args)
+        const args = parseSendArgs(parts.slice(1));
+        return await executeSend(args);
       }
       case 'balance': {
-        if (parts.length < 2) throw new Error('Usage: balance <address>')
-        return await executeBalance(parts[1])
+        if (parts.length < 2) throw new Error('Usage: balance <address>');
+        return await executeBalance(parts[1]);
+      }
+      case 'addbalance': {
+        if (parts.length < 2) throw new Error('Usage: addBalance <amount>');
+        const amount = parseInt(parts[1]);
+        if (isNaN(amount) || amount <= 0) throw new Error('Invalid amount. Must be a positive number.');
+        return await executeAddBalance(amount);
       }
       case 'help':
-        return getHelpText()
+        return getHelpText();
       case 'clear':
-        setHistory([])
-        return 'Terminal cleared'
+        setHistory([]);
+        return 'Terminal cleared';
       default:
-        throw new Error(`Unknown command: ${cmd}. Type 'help' for available commands.`)
+        throw new Error(`Unknown command: ${cmd}. Type 'help' for available commands.`);
     }
-  }
+  };
 
   const parseSendArgs = (args: string[]) => {
-    let to = '', amount = 0, from = '', privateKey = ''
+    let to = '', amount = 0, from = '', privateKey = '';
 
     for (let i = 0; i < args.length; i++) {
       switch (args[i]) {
         case '--to':
-          to = args[++i] || ''
-          break
+          to = args[++i] || '';
+          break;
         case '--amount':
-          amount = parseFloat(args[++i] || '0')
-          break
+          amount = parseFloat(args[++i] || '0');
+          break;
         case '--from':
-          from = args[++i] || ''
-          break
+          from = args[++i] || '';
+          break;
         case '--key':
-          privateKey = args[++i] || ''
-          break
+          privateKey = args[++i] || '';
+          break;
       }
     }
 
-    return { to, amount, from, privateKey }
-  }
+    return { to, amount, from, privateKey };
+  };
 
   const executeSend = async (args: { to: string; amount: number; from: string; privateKey: string }) => {
-    const { to, amount } = args
-    let { from, privateKey } = args
+    const { to, amount } = args;
+    let { from, privateKey } = args;
 
     if (!to || !amount) {
-      throw new Error('Usage: send --to <address> --amount <number> [--from <address> --key <privateKey>]')
+      throw new Error('Usage: send --to <address> --amount <number> [--from <address> --key <privateKey>]');
     }
 
     // Get wallet from localStorage if not provided
     if (!from || !privateKey) {
-      const stored = localStorage.getItem('wallet')
-      if (!stored) throw new Error('No wallet found. Create one first or provide --from and --key')
-      const walletData = JSON.parse(stored)
-      from = from || walletData.address
-      privateKey = privateKey || walletData.privateKey
+      const stored = localStorage.getItem('wallet');
+      if (!stored) throw new Error('No wallet found. Create one first or provide --from and --key');
+      const walletData = JSON.parse(stored);
+      from = from || walletData.address;
+      privateKey = privateKey || walletData.privateKey;
     }
 
-    // Get nonce from node (prevent replay attacks)
-    // In a real implementation, you'd call an RPC endpoint to get the next nonce
-    // For now, we'll use a simple incrementing nonce
-    const nonce = Date.now()
+    const nonce = Date.now();
+    const txPayload = { from, to, amount, nonce };
+    const signature = await signTransaction(txPayload, privateKey);
 
-    const txPayload = { from, to, amount, nonce }
-    const signature = await signTransaction(txPayload, privateKey)
-
-    await submitTransaction({ ...txPayload, signature })
+    await submitTransaction({ ...txPayload, signature });
     return `✅ Transaction created
 🔍 Broadcasting to network...
 ✅ Transaction verified
 ⛓️  Added to mempool
-📦 TX Hash: ${signature.slice(0, 16)}...`
-  }
+📦 TX Hash: ${signature.slice(0, 16)}...`;
+  };
 
   const executeBalance = async (address: string): Promise<string> => {
-    const result = await getBalance(address)
-    return `Balance for ${address}: ${result.balance}`
-  }
+    const result = await getBalance(address);
+    return `Balance for ${address}: ${result.balance}`;
+  };
+
+  const executeAddBalance = async (amount: number): Promise<string> => {
+    const stored = localStorage.getItem('wallet');
+    if (!stored) throw new Error('No wallet found. Create one first.');
+    const walletData = JSON.parse(stored);
+    const result = await addBalance(walletData.address, amount);
+    return `✅ Added ${amount} testcoins. New balance: ${result.newBalance}`;
+  };
 
   const getHelpText = () => {
     return `
@@ -137,6 +159,9 @@ Available commands:
   balance <address>
     Check balance of an address.
 
+  addBalance <amount>
+    Add testcoins to your wallet balance.
+
   help
     Show this help message.
 
@@ -146,68 +171,87 @@ Available commands:
 Examples:
   send --to 0x742d35Cc6634C0532925a3b844Bc454e4438f44e --amount 10
   balance 0x742d35Cc6634C0532925a3b844Bc454e4438f44e
-    `.trim()
-  }
+  addBalance 50
+    `.trim();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (currentCommand.trim() && !loading) {
-      executeCommand(currentCommand)
-      setCurrentCommand('')
+      executeCommand(currentCommand);
+      setCurrentCommand('');
     }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowUp') {
-      // Could implement command history here
-      e.preventDefault()
-    }
-  }
+  };
 
   return (
-    <div className="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm border border-gray-700">
-      <div className="mb-2 text-green-300 font-semibold">🔗 Blockchain Terminal</div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card p-6"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <TerminalIcon className="w-5 h-5 text-[var(--accent-teal)]" />
+        <h3 className="text-lg font-semibold">Terminal</h3>
+      </div>
 
       <div
         ref={terminalRef}
-        className="h-64 overflow-y-auto mb-2 bg-black p-3 rounded border border-gray-600"
+        className="h-80 overflow-y-auto mb-4 bg-[var(--bg-secondary)] p-4 rounded-xl terminal-font text-sm border border-[var(--border)]"
       >
-        {history.map((item, index) => (
-          <div key={index} className="mb-2">
-            <div className="text-blue-400 flex items-center gap-2">
-              <span>❯</span>
-              <span>{item.command}</span>
-            </div>
-            <div className={`ml-4 ${item.error ? 'text-red-400' : 'text-green-400'}`}>
-              {item.output.split('\n').map((line, i) => (
-                <div key={i}>{line}</div>
-              ))}
-            </div>
-          </div>
-        ))}
+        <AnimatePresence>
+          {history.map((item, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="mb-3"
+            >
+              <div className="text-[var(--accent-teal)] flex items-center gap-2 mb-1">
+                <span>❯</span>
+                <span className="opacity-80">{item.command}</span>
+                <span className="text-xs text-[var(--text-secondary)] ml-auto">
+                  {new Date(item.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              <div className={`ml-4 whitespace-pre-line ${item.error ? 'text-red-400' : 'text-[var(--text-primary)]'}`}>
+                {item.output}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
         {loading && (
-          <div className="text-yellow-400 ml-4 animate-pulse">⏳ Processing transaction...</div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-[var(--accent-pink)] ml-4 animate-pulse"
+          >
+            ⏳ Processing transaction...
+          </motion.div>
         )}
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2 items-center">
-        <span className="text-green-400">❯</span>
+        <span className="text-[var(--accent-teal)] terminal-font">❯</span>
         <input
           ref={inputRef}
           type="text"
           value={currentCommand}
           onChange={(e) => setCurrentCommand(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="flex-1 bg-transparent border-none outline-none text-green-400 placeholder-gray-500"
+          className="flex-1 bg-transparent border-none outline-none text-[var(--text-primary)] placeholder-[var(--text-secondary)] terminal-font focus:ring-0"
           placeholder="send --to 0x... --amount 10"
           disabled={loading}
           autoFocus
+          aria-label="Terminal command input"
         />
+        <span className={`terminal-font text-[var(--accent-teal)] ${caretVisible ? 'opacity-100' : 'opacity-0'} transition-opacity`}>
+          █
+        </span>
       </form>
 
-      <div className="mt-2 text-xs text-gray-400">
+      <div className="mt-3 text-xs text-[var(--text-secondary)]">
         Type 'help' for available commands
       </div>
-    </div>
-  )
+    </motion.div>
+  );
 }

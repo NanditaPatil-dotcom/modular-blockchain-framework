@@ -1,72 +1,58 @@
-import { useState, useEffect } from 'react'
-import BalancesCard from './components/BalancesCard'
-import SendTransactionForm from './components/SendTransactionForm'
-import BlocksList from './components/BlocksList'
-import WalletCreator from './components/WalletCreator'
-import MempoolMonitor from './components/MempoolMonitor'
-import Terminal from './components/Terminal'
-import { getBlocks, getMempool } from './lib/rpc'
+import { useState, useEffect } from 'react';
+import Header from './components/Header';
+import WalletCard from './components/WalletCard';
+import Terminal from './components/Terminal';
+import TxForm from './components/TxForm';
+import BlocksList from './components/BlocksList';
+import MempoolBadge from './components/MempoolBadge';
+import Footer from './components/Footer';
+import { motion } from 'framer-motion';
 
 function App() {
-  const [rpcUrl] = useState(import.meta.env.VITE_RPC_BASE_URL || 'http://localhost:8080')
-  const [networkStats, setNetworkStats] = useState({
-    nodes: 1,
-    blocks: 0,
-    pendingTxs: 0
-  })
+  const [rpcUrl] = useState(import.meta.env.VITE_RPC_BASE_URL || 'http://localhost:8080');
 
+  // Initialize theme on app load
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [blocksRes, mempoolRes] = await Promise.all([
-          getBlocks(rpcUrl),
-          getMempool(rpcUrl)
-        ])
-        setNetworkStats({
-          nodes: 1, // Simplified - would need network discovery
-          blocks: blocksRes.length,
-          pendingTxs: mempoolRes.length
-        })
-      } catch (error) {
-        console.error('Failed to fetch network stats:', error)
-      }
-    }
-
-    fetchStats()
-    const interval = setInterval(fetchStats, 5000)
-    return () => clearInterval(interval)
-  }, [rpcUrl])
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.classList.toggle('light', savedTheme === 'light');
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
-      <header className="bg-gray-800 p-4 border-b border-gray-700">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-blue-400">Modular Blockchain</h1>
-            <div className="flex items-center gap-4 text-sm">
-              <span className="text-green-400">● Nodes: {networkStats.nodes}</span>
-              <span className="text-blue-400">● Blocks: {networkStats.blocks}</span>
-              <span className="text-yellow-400">● Pending TXs: {networkStats.pendingTxs}</span>
-            </div>
-          </div>
+    <div className="min-h-screen">
+      <Header />
 
-        </div>
-      </header>
+      <main className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Interactive Area */}
+          <motion.div
+            className="space-y-6"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <WalletCard />
+            <Terminal />
+            <TxForm rpcUrl={rpcUrl} onTransactionSent={() => {}} />
+          </motion.div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <WalletCreator />
-          <BalancesCard rpcUrl={rpcUrl} />
-          <SendTransactionForm rpcUrl={rpcUrl} />
-          <MempoolMonitor rpcUrl={rpcUrl} />
-          <BlocksList rpcUrl={rpcUrl} />
-          <Terminal />
+          {/* Right Column - Explorer */}
+          <motion.div
+            className="space-y-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <BlocksList rpcUrl={rpcUrl} />
+          </motion.div>
         </div>
       </main>
+
+      <Footer />
+
+      {/* Floating Mempool Badge */}
+      <MempoolBadge rpcUrl={rpcUrl} />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

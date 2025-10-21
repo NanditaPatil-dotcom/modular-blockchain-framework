@@ -5,10 +5,17 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
+	"sync"
 	"modular-blockchain-framework/core"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
+
+var faucetRequests = struct{
+    mu sync.Mutex
+    last map[string]time.Time
+}{ last: make(map[string]time.Time) }
 
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +167,66 @@ func (r *RPCServer) Start(addr string) {
 		// Add block to chain
 		r.chain.AddBlock(block)
 		json.NewEncoder(w).Encode(map[string]string{"status": "accepted"})
+	})
+
+	// addBalance endpoint
+	mux.HandleFunc("/addBalance", func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		type reqBody struct {
+			UserId string `json:"userId"`
+			Amount int    `json:"amount"`
+		}
+		var rb reqBody
+		if err := json.NewDecoder(req.Body).Decode(&rb); err != nil || rb.UserId == "" || rb.Amount <= 0 {
+			http.Error(w, "invalid body", http.StatusBadRequest)
+			return
+		}
+
+		// Add balance to the user's address
+		r.chain.State[rb.UserId] += rb.Amount
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"newBalance": r.chain.GetBalance(rb.UserId),
+		})
+	})
+
+	// faucet endpoint
+	mux.HandleFunc("/faucet", func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		type reqBody struct {
+			Address string `json:"address"`
+		}
+		var rb reqBody
+		if err := json.NewDecoder(req.Body).Decode(&rb); err != nil || rb.Address == "" {
+			http.Error(w, "invalid body", http.StatusBadRequest)
+			return
+		}
+
+		faucetRequests.mu.Lock()
+		last, ok := faucetRequests.last[rb.Address]
+		if ok && time.Since(last) < 24*time.Hour {
+			faucetRequests.mu.Unlock()
+			http.Error(w, "faucet: only 1 request per 24h allowed", http.StatusTooManyRequests)
+			return
+		}
+		// mark time first (prevent double-spend in concurrent requests)
+		faucetRequests.last[rb.Address] = time.Now()
+		faucetRequests.mu.Unlock()
+
+		// credit amount (e.g., 50 testcoins)
+		amount := 50
+		r.chain.State[rb.Address] += amount
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":"ok","address":rb.Address,"amount":amount,"balance": r.chain.GetBalance(rb.Address),
+		})
 	})
 
 	// listen on all interfaces (Docker-friendly)

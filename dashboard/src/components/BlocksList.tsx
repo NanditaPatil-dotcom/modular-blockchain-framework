@@ -1,109 +1,134 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react';
+import { Blocks, RefreshCw } from 'lucide-react';
+import { getBlocks } from '../lib/rpc';
+import { motion } from 'framer-motion';
+import BlockCard from './BlockCard';
 
 interface Transaction {
-  id: string
-  from: string
-  to: string
-  amount: number
-  nonce: number
-  signature: string
+  id: string;
+  from: string;
+  to: string;
+  amount: number;
+  nonce: number;
+  signature: string;
 }
 
 interface Block {
-  number: number
-  prevHash: string
-  timestamp: number
-  transactions: Transaction[]
-  nonce: number
-  hash: string
+  number: number;
+  prevHash: string;
+  timestamp: number;
+  transactions: Transaction[];
+  nonce: number;
+  hash: string;
 }
 
 export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
-  const [blocks, setBlocks] = useState<Block[]>([])
-  const [selectedBlock, setSelectedBlock] = useState<Block | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string>('')
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [expandedBlocks, setExpandedBlocks] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
   const fetchBlocks = useCallback(async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`${rpcUrl}/blocks`)
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      const data: Block[] = await response.json()
-      setBlocks(data)
+      const data: Block[] = await getBlocks(rpcUrl);
+      // Sort blocks by number descending (newest first)
+      const sortedBlocks = data.sort((a, b) => b.number - a.number);
+      setBlocks(sortedBlocks);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch blocks')
+      setError(err instanceof Error ? err.message : 'Failed to fetch blocks');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [rpcUrl])
+  }, [rpcUrl]);
 
   useEffect(() => {
-    fetchBlocks()
-    const interval = setInterval(fetchBlocks, 3000) // More frequent updates
-    return () => clearInterval(interval)
-  }, [rpcUrl, fetchBlocks])
+    fetchBlocks();
+    const interval = setInterval(fetchBlocks, 20000); // Poll every 20 seconds
+    return () => clearInterval(interval);
+  }, [rpcUrl, fetchBlocks]);
+
+  const toggleBlockExpansion = (blockNumber: number) => {
+    setExpandedBlocks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(blockNumber)) {
+        newSet.delete(blockNumber);
+      } else {
+        newSet.add(blockNumber);
+      }
+      return newSet;
+    });
+  };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Block Explorer</h2>
-      {loading && <div className="text-gray-500">Loading...</div>}
-      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          <h3 className="font-medium text-gray-700">Recent Blocks</h3>
-          {blocks.map((block) => (
-            <div
-              key={block.number}
-              onClick={() => setSelectedBlock(block)}
-              className={`p-3 border rounded cursor-pointer hover:bg-gray-50 ${
-                selectedBlock?.number === block.number ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-              }`}
-            >
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Block #{block.number}</span>
-                <span className="text-sm text-gray-600">{block.transactions.length} tx</span>
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {new Date(block.timestamp * 1000).toLocaleString()}
-              </div>
-              <div className="text-xs font-mono text-gray-500 mt-1">
-                Hash: {block.hash.slice(0, 16)}...
-              </div>
-            </div>
-          ))}
-          {blocks.length === 0 && !loading && !error && (
-            <div className="text-gray-500 text-center py-4">No blocks found</div>
-          )}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card p-6"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Blocks className="w-5 h-5 text-[var(--accent-teal)]" />
+          <h3 className="text-lg font-semibold">Block Explorer</h3>
         </div>
+        <button
+          onClick={fetchBlocks}
+          disabled={loading}
+          className="btn-secondary p-2"
+          aria-label="Refresh blocks"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
 
-        {selectedBlock && (
-          <div className="space-y-2">
-            <h3 className="font-medium text-gray-700">Block Details</h3>
-            <div className="bg-gray-50 p-3 rounded text-sm">
-              <div><strong>Number:</strong> {selectedBlock.number}</div>
-              <div><strong>Timestamp:</strong> {new Date(selectedBlock.timestamp * 1000).toLocaleString()}</div>
-              <div><strong>Prev Hash:</strong> {selectedBlock.prevHash.slice(0, 20)}...</div>
-              <div><strong>Hash:</strong> {selectedBlock.hash.slice(0, 20)}...</div>
-              <div><strong>Nonce:</strong> {selectedBlock.nonce}</div>
-              <div><strong>Transactions:</strong> {selectedBlock.transactions.length}</div>
-            </div>
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+          {error}
+        </div>
+      )}
 
-            <h4 className="font-medium text-gray-700 text-sm">Transactions</h4>
-            <div className="max-h-48 overflow-y-auto space-y-1">
-              {selectedBlock.transactions.map((tx, idx) => (
-                <div key={idx} className="bg-white border p-2 rounded text-xs">
-                  <div className="font-mono text-gray-600">ID: {tx.id.slice(0, 16)}...</div>
-                  <div>From: {tx.from.slice(0, 16)}...</div>
-                  <div>To: {tx.to.slice(0, 16)}...</div>
-                  <div>Amount: {tx.amount}</div>
-                </div>
-              ))}
-            </div>
+      <div className="space-y-4 max-h-[600px] overflow-y-auto">
+        {loading && blocks.length === 0 && (
+          <div className="text-center py-8">
+            <div className="inline-block w-6 h-6 border-2 border-[var(--accent-teal)] border-t-transparent rounded-full animate-spin mb-2"></div>
+            <div className="text-[var(--text-secondary)]">Loading blocks...</div>
           </div>
         )}
+
+        {blocks.length === 0 && !loading && !error && (
+          <div className="text-center py-8 text-[var(--text-secondary)]">
+            No blocks found
+          </div>
+        )}
+
+        <motion.div
+          className="space-y-4"
+          layout
+        >
+          {blocks.map((block, index) => (
+            <motion.div
+              key={block.number}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              layout
+            >
+              <BlockCard
+                block={block}
+                isExpanded={expandedBlocks.has(block.number)}
+                onToggle={() => toggleBlockExpansion(block.number)}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
-    </div>
-  )
+
+      {blocks.length > 0 && (
+        <div className="mt-4 text-center text-sm text-[var(--text-secondary)]">
+          Showing {blocks.length} blocks • Auto-refreshing every 20 seconds
+        </div>
+      )}
+    </motion.div>
+  );
 }

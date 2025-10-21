@@ -19,7 +19,12 @@ export default function MempoolMonitor({ rpcUrl }: { rpcUrl: string }) {
     setError('')
     try {
       const response = await fetch(`${rpcUrl}/mempool`)
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Rate limited. Please wait before retrying.')
+        }
+        throw new Error(`HTTP ${response.status}`)
+      }
       const data: Transaction[] = await response.json()
       setTransactions(data)
     } catch (err) {
@@ -31,7 +36,7 @@ export default function MempoolMonitor({ rpcUrl }: { rpcUrl: string }) {
 
   useEffect(() => {
     fetchMempool()
-    const interval = setInterval(fetchMempool, 2000) // Poll every 2 seconds
+    const interval = setInterval(fetchMempool, 10000) // Poll every 10 seconds
     return () => clearInterval(interval)
   }, [rpcUrl, fetchMempool])
 
