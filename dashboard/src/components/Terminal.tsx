@@ -114,7 +114,7 @@ export default function Terminal() {
     const txPayload = { from, to, amount, nonce }
     const signature = await signTransaction(txPayload, privateKey)
 
-    const result = await submitTransaction({ ...txPayload, signature })
+    await submitTransaction({ ...txPayload, signature })
     return `✅ Transaction created
 🔍 Broadcasting to network...
 ✅ Transaction verified
