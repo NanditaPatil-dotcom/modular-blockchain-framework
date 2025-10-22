@@ -61,14 +61,6 @@ export default function Header() {
               </button>
             )}
           </div>
-
-          <button
-            onClick={toggleTheme}
-            className="btn-secondary p-2"
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
         </div>
       </div>
     </header>
