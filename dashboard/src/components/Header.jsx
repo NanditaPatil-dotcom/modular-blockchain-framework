@@ -26,7 +26,7 @@ export default function Header() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[var(--accent-teal)] to-[var(--accent-pink)] bg-clip-text text-transparent">
-            Modular Blockchain Framework • Devnet
+            Modular Blockchain Framework
           </h1>
           <div className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-secondary)] rounded-full text-sm">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
