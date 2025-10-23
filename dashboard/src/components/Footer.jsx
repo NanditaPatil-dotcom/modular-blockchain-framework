@@ -34,12 +34,6 @@ export default function Footer() {
       <div className="mt-4 pt-4 border-t border-[var(--border)]">
         <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-[var(--text-secondary)]">
           <span>Status: <span className="text-green-400">● Online</span></span>
-          <span>•</span>
-          <span>Network: Devnet</span>
-          <span>•</span>
-          <span>Version: 1.0.0</span>
-          <span>•</span>
-          <span>Powered by React & Go</span>
         </div>
       </div>
     </footer>
