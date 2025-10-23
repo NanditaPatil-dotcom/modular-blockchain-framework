@@ -6,12 +6,6 @@ export default function Footer() {
   return (
     <footer className="glass-card p-6 mt-8">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Heart className="w-4 h-4 text-[var(--accent-pink)]" />
-          <span className="text-sm text-[var(--text-secondary)]">
-            Built with love for blockchain developers
-          </span>
-        </div>
 
         <div className="flex items-center gap-6">
           <a
