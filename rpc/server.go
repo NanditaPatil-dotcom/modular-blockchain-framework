@@ -20,28 +20,17 @@ var faucetRequests = struct{
 
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Allow specific origins for production
-		origin := r.Header.Get("Origin")
-		allowedOrigins := []string{
-			"http://localhost:5173",           // Local development
-			"https://modular-blockchain-framework.onrender.com", // Production frontend
-		}
-
-		for _, allowedOrigin := range allowedOrigins {
-			if origin == allowedOrigin {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-				break
-			}
-		}
-
+		// Allow your frontend domain
+		w.Header().Set("Access-Control-Allow-Origin", "https://modular-blockchain-framework.onrender.com")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-		if r.Method == "OPTIONS" {
+		// Handle preflight OPTIONS requests
+		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }
