@@ -7,7 +7,7 @@ export const themes = {
     card: 'rgba(30, 41, 59, 0.8)',
     accent: {
       teal: '#2dd4bf',
-      pink: '#ff6bcb'
+      green: '#00ff88'
     },
     text: {
       primary: '#f1f5f9',
@@ -21,7 +21,7 @@ export const themes = {
     card: 'rgba(255, 255, 255, 0.9)',
     accent: {
       teal: '#0d9488',
-      pink: '#db2777'
+      green: '#00cc66'
     },
     text: {
       primary: '#0f172a',

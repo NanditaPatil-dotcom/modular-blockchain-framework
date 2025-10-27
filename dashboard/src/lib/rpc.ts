@@ -13,7 +13,7 @@ export async function getBalance(address: string) {
 }
 
 export async function requestFaucet(address: string) {
-  const url = `${RPC_BASE}/faucet`;
+  const url = `${RPC_BASE}/api/faucet`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -71,6 +71,13 @@ export async function addBalance(userId: string, amount: number, rpcUrl?: string
   return callRPC('/addBalance', {
     method: 'POST',
     body: JSON.stringify({ userId, amount }),
+  }, rpcUrl);
+}
+
+export async function resetBalance(address: string, rpcUrl?: string) {
+  return callRPC('/api/resetBalance', {
+    method: 'POST',
+    body: JSON.stringify({ address }),
   }, rpcUrl);
 }
 

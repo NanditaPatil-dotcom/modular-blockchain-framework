@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import usePolling from "../hooks/usePolling";
-import { getBalance, requestFaucet } from "../lib/rpc";
+import { getBalance, requestFaucet, resetBalance } from "../lib/rpc";
 import { Copy, RefreshCw, Plus } from "lucide-react"; // if using lucide-react
 
 export default function WalletCard({ initialAddress = "" }) {
@@ -9,6 +9,7 @@ export default function WalletCard({ initialAddress = "" }) {
   const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [faucetLoading, setFaucetLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
 
@@ -44,6 +45,22 @@ export default function WalletCard({ initialAddress = "" }) {
     } catch (e) {
       setToast("Faucet error: " + (e.message || e));
     } finally { setFaucetLoading(false); setTimeout(()=>setToast(null), 4000); }
+  };
+
+  const onResetWallet = async () => {
+    if (!address) {
+      setToast("No address — create/import a wallet first");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await resetBalance(address);
+      setToast("Wallet balance reset to 0");
+      // Immediately refresh balance
+      await fetchBalance();
+    } catch (e) {
+      setToast("Reset error: " + (e.message || e));
+    } finally { setResetLoading(false); setTimeout(()=>setToast(null), 4000); }
   };
 
   const onCopy = async () => {
@@ -101,8 +118,8 @@ export default function WalletCard({ initialAddress = "" }) {
               {faucetLoading ? "Requesting…" : "Get testcoins (Faucet)"}
             </button>
 
-            <button onClick={() => { localStorage.removeItem("walletAddress"); window.location.reload(); }} className="px-3 py-2 rounded bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 text-sm">
-              Reset wallet
+            <button onClick={onResetWallet} disabled={resetLoading} className="px-3 py-2 rounded bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 text-sm">
+              {resetLoading ? "Resetting…" : "Reset wallet"}
             </button>
           </>
         )}

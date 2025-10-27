@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 	"sync"
@@ -19,9 +20,24 @@ var faucetRequests = struct{
 
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*") // dev: wildcard. In prod, set your frontend URL.
+		// Allow specific origins for production
+		origin := r.Header.Get("Origin")
+		allowedOrigins := []string{
+			"http://localhost:5173",           // Local development
+			"https://modular-blockchain-framework.onrender.com", // Production frontend
+		}
+
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
+		}
+
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -97,9 +113,12 @@ func (r *RPCServer) Start(addr string) {
 
 	// root handler
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(`<h1>RPC is alive!</h1><p>Use /balance and /submitTx endpoints.</p>`))
-	})
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(map[string]string{
+        "status":  "ok",
+        "message": "RPC server is alive and speaking JSON",
+    })
+})
 
 	// get balance
 	mux.HandleFunc("/balance", func(w http.ResponseWriter, req *http.Request) {
@@ -194,8 +213,8 @@ func (r *RPCServer) Start(addr string) {
 		})
 	})
 
-	// faucet endpoint
-	mux.HandleFunc("/faucet", func(w http.ResponseWriter, req *http.Request) {
+	// resetBalance endpoint
+	mux.HandleFunc("/api/resetBalance", func(w http.ResponseWriter, req *http.Request) {
 		if req.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -209,26 +228,53 @@ func (r *RPCServer) Start(addr string) {
 			return
 		}
 
-		faucetRequests.mu.Lock()
-		last, ok := faucetRequests.last[rb.Address]
-		if ok && time.Since(last) < 24*time.Hour {
-			faucetRequests.mu.Unlock()
-			http.Error(w, "faucet: only 1 request per 24h allowed", http.StatusTooManyRequests)
-			return
-		}
-		// mark time first (prevent double-spend in concurrent requests)
-		faucetRequests.last[rb.Address] = time.Now()
-		faucetRequests.mu.Unlock()
-
-		// credit amount (e.g., 50 testcoins)
-		amount := 50
-		r.chain.State[rb.Address] += amount
+		// Reset balance to 0
+		r.chain.State[rb.Address] = 0
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":"ok","address":rb.Address,"amount":amount,"balance": r.chain.GetBalance(rb.Address),
+			"success": true,
+			"newBalance": r.chain.GetBalance(rb.Address),
 		})
 	})
 
+	// faucet endpoint
+	mux.HandleFunc("/api/faucet", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		var req struct {
+			Address string `json:"address"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error":"Invalid JSON"}`, http.StatusBadRequest)
+			return
+		}
+
+		resp := map[string]interface{}{
+			"address": req.Address,
+			"amount":  50,
+			"balance": 50,
+			"status":  "ok",
+		}
+
+		json.NewEncoder(w).Encode(resp)
+	})
+
+	// get blocks
+	mux.HandleFunc("/blocks", func(w http.ResponseWriter, req *http.Request) {
+		blocks := make([]core.Block, len(r.chain.Blocks))
+		copy(blocks, r.chain.Blocks)
+		json.NewEncoder(w).Encode(blocks)
+	})
+
 	// listen on all interfaces (Docker-friendly)
-	http.ListenAndServe(addr, enableCORS(mux))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	http.ListenAndServe(":"+port, enableCORS(mux))
 }
