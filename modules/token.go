@@ -18,7 +18,7 @@ func (m *TokenModule) HandleTransaction(tx core.Transaction) error {
 		return errors.New("insufficient funds")
 	}
 	// apply immediately into a temporary state; real code would apply during block finalize
-	m.chain.State[tx.From] -= tx.Amount
-	m.chain.State[tx.To] += tx.Amount
+	m.chain.AddBalance(tx.From, -tx.Amount)
+	m.chain.AddBalance(tx.To, tx.Amount)
 	return nil
 }

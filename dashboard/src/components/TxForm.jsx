@@ -30,8 +30,8 @@ export default function TxForm({ rpcUrl, onTransactionSent }) {
   const fetchBalance = async () => {
     if (!wallet?.address) return;
     try {
-      const result = await getBalance(wallet.address, rpcUrl);
-      setBalance(result.balance || 0);
+      const balance = await getBalance(wallet.address, rpcUrl);
+      setBalance(balance || 0);
     } catch (error) {
       console.error('Failed to fetch balance:', error);
     }

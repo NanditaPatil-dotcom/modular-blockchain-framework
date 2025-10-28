@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Header from './components/Header';
 import WalletCard from './components/WalletCard';
 import Terminal from './components/Terminal';
@@ -10,12 +10,6 @@ import { motion } from 'framer-motion';
 
 function App() {
   const [rpcUrl] = useState(import.meta.env.VITE_RPC_BASE_URL || 'http://localhost:8080');
-
-  // Initialize theme on app load
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.classList.toggle('light', savedTheme === 'light');
-  }, []);
 
   return (
     <div className="min-h-screen">

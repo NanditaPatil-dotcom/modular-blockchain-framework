@@ -5,17 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BlockCard from './BlockCard';
 
 interface Transaction {
-  from: string;
-  to: string;
-  amount: number;
+  From: string;
+  To: string;
+  Amount: number;
+  Nonce?: number;
+  Signature?: string;
 }
 
 interface Block {
-  index: number;
-  hash: string;
-  previousHash: string;
-  timestamp: string;
-  transactions: Transaction[];
+  Number: number;
+  Hash: string;
+  PrevHash: string;
+  Timestamp: number;
+  Transactions: Transaction[];
+  Nonce: number;
 }
 
 export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
@@ -32,8 +35,8 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
     setError('');
     try {
       const data: Block[] = await getBlocks(rpcUrl);
-      // Sort blocks by index descending (newest first)
-      const sortedBlocks = data.sort((a, b) => b.index - a.index);
+      // Sort blocks by Number descending (newest first)
+      const sortedBlocks = data.sort((a, b) => b.Number - a.Number);
 
       // Check for new blocks
       if (sortedBlocks.length > previousBlockCount) {
@@ -70,12 +73,12 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
 
   // Filter blocks based on search query
   const filteredBlocks = blocks.filter(block =>
-    block.hash.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    block.index.toString().includes(searchQuery)
+    (block.Hash && block.Hash.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (block.Number !== undefined && block.Number.toString().includes(searchQuery))
   );
 
   // Calculate total transactions
-  const totalTransactions = blocks.reduce((sum, block) => sum + block.transactions.length, 0);
+  const totalTransactions = blocks.reduce((sum, block) => sum + (block.Transactions?.length || 0), 0);
 
   return (
     <motion.div
@@ -104,7 +107,7 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
           <h3 className="text-lg font-semibold">Block Explorer</h3>
         </div>
         <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
-          <span>Current Block Height: {blocks.length > 0 ? Math.max(...blocks.map(b => b.index)) : 0}</span>
+          <span>Current Block Height: {blocks.length > 0 ? Math.max(...blocks.map(b => b.Number)) : 0}</span>
           <span>Total Transactions: {totalTransactions}</span>
         </div>
       </div>
@@ -147,7 +150,7 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
           {filteredBlocks.length > 0 ? (
             filteredBlocks.map((block, index) => (
               <motion.div
-                key={block.index}
+                key={block.Number}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -155,8 +158,8 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
               >
                 <BlockCard
                   block={block}
-                  isExpanded={expandedBlocks.has(block.index)}
-                  onToggle={() => toggleBlockExpansion(block.index)}
+                  isExpanded={expandedBlocks.has(block.Number)}
+                  onToggle={() => toggleBlockExpansion(block.Number)}
                 />
               </motion.div>
             ))

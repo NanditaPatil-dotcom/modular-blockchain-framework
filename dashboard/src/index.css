@@ -8,6 +8,7 @@
   --bg-secondary: #1e293b; /* slate */
   --bg-card: rgba(30, 41, 59, 0.8); /* semi-transparent glass */
   --accent-teal: #2dd4bf;
+  --accent-pink: #ec4899;
   --accent-green: #00ff88;
   --text-primary: #f1f5f9;
   --text-secondary: #94a3b8;
@@ -19,6 +20,7 @@
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.9);
   --accent-teal: #0d9488;
+  --accent-pink: #db2777;
   --accent-green: #00cc66;
   --text-primary: #0f172a;
   --text-secondary: #64748b;

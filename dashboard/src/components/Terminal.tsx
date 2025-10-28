@@ -138,8 +138,8 @@ export default function Terminal() {
   };
 
   const executeBalance = async (address: string): Promise<string> => {
-    const result = await getBalance(address);
-    return `Balance for ${address}: ${result.balance}`;
+    const balance = await getBalance(address);
+    return `Balance for ${address}: ${balance}`;
   };
 
   const executeAddBalance = async (amount: number): Promise<string> => {

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BlockCard({ block, isExpanded, onToggle }) {
   const formatReadableTime = (timestamp) => {
-    const date = new Date(timestamp);
+    // Backend sends Unix timestamp in seconds, JavaScript expects milliseconds
+    const date = new Date(timestamp * 1000);
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -28,15 +29,15 @@ export default function BlockCard({ block, isExpanded, onToggle }) {
             <Package className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg terminal-font">Block #{block.index}</h3>
+            <h3 className="font-semibold text-lg terminal-font">Block #{block.Number}</h3>
             <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                {formatReadableTime(block.timestamp)}
+                {formatReadableTime(block.Timestamp)}
               </span>
               <span className="flex items-center gap-1">
                 <Package className="w-4 h-4" />
-                {block.transactions?.length || 0} tx
+                {block.Transactions?.length || 0} tx
               </span>
             </div>
           </div>
@@ -45,7 +46,7 @@ export default function BlockCard({ block, isExpanded, onToggle }) {
           <div className="text-right">
             <div className="text-xs text-[var(--text-secondary)]">Hash</div>
             <div className="terminal-font text-xs font-mono">
-              {block.hash?.slice(0, 8)}...
+              {block.Hash?.slice(0, 8)}...
             </div>
           </div>
           {isExpanded ? (
@@ -69,29 +70,29 @@ export default function BlockCard({ block, isExpanded, onToggle }) {
                 <h4 className="font-medium text-[var(--accent-teal)]">Block Details</h4>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[var(--text-secondary)]">Index:</span>
-                    <span className="terminal-font">{block.index}</span>
+                    <span className="text-[var(--text-secondary)]">Number:</span>
+                    <span className="terminal-font">{block.Number}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Timestamp:</span>
-                    <span>{formatReadableTime(block.timestamp)}</span>
+                    <span>{formatReadableTime(block.Timestamp)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Hash:</span>
-                    <span className="terminal-font text-xs break-all">{block.hash}</span>
+                    <span className="terminal-font text-xs break-all">{block.Hash}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Previous Hash:</span>
-                    <span className="terminal-font text-xs break-all">{block.previousHash}</span>
+                    <span className="terminal-font text-xs break-all">{block.PrevHash}</span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium text-[var(--accent-teal)]">Transactions ({block.transactions?.length || 0})</h4>
+                <h4 className="font-medium text-[var(--accent-teal)]">Transactions ({block.Transactions?.length || 0})</h4>
                 <div className="max-h-48 overflow-y-auto space-y-2">
-                  {block.transactions?.length > 0 ? (
-                    block.transactions.map((tx, idx) => (
+                  {block.Transactions?.length > 0 ? (
+                    block.Transactions.map((tx, idx) => (
                       <motion.div
                         key={idx}
                         className="bg-[var(--bg-secondary)] p-3 rounded-lg"
@@ -102,15 +103,15 @@ export default function BlockCard({ block, isExpanded, onToggle }) {
                         <div className="space-y-1 text-xs">
                           <div className="flex justify-between">
                             <span className="text-[var(--text-secondary)]">From:</span>
-                            <span className="terminal-font">{tx.from}</span>
+                            <span className="terminal-font">{tx.From}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-[var(--text-secondary)]">To:</span>
-                            <span className="terminal-font">{tx.to}</span>
+                            <span className="terminal-font">{tx.To}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-[var(--text-secondary)]">Amount:</span>
-                            <span className="text-[var(--accent-green)] font-semibold">{tx.amount}</span>
+                            <span className="text-[var(--accent-green)] font-semibold">{tx.Amount}</span>
                           </div>
                         </div>
                       </motion.div>

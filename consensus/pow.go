@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"modular-blockchain-framework/core"
@@ -51,7 +52,7 @@ func (p *PoW) ValidateBlock(b core.Block) bool {
 	// check hash difficulty
 	h := sha256.Sum256([]byte(fmt.Sprintf("%d%s%d%d", b.Number, b.PrevHash, b.Nonce, b.Timestamp)))
 	hs := fmt.Sprintf("%x", h)
-	return hs[:p.difficulty] == string(make([]byte, p.difficulty)) // placeholder
+	return hs[:p.difficulty] == strings.Repeat("0", p.difficulty)
 }
 
 func mine(b core.Block, diff int) (uint64, string) {
@@ -61,7 +62,7 @@ func mine(b core.Block, diff int) (uint64, string) {
 		h := sha256.Sum256([]byte(fmt.Sprintf("%d%s%d%d", b.Number, b.PrevHash, nonce, b.Timestamp)))
 		hs := fmt.Sprintf("%x", h)
 		// VERY small difficulty check: starts with diff zeros
-		if hs[:diff] == string(make([]byte, diff)) {
+		if hs[:diff] == strings.Repeat("0", diff) {
 			return nonce, hs
 		}
 		if nonce%1000000 == 0 {

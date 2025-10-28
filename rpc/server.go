@@ -20,10 +20,36 @@ var faucetRequests = struct{
 
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Allow your frontend domain
-		w.Header().Set("Access-Control-Allow-Origin", "https://modular-blockchain-framework.onrender.com")
+		origin := r.Header.Get("Origin")
+		
+		// Allow localhost for development and production domain
+		allowedOrigins := []string{
+			"http://localhost:5173",
+			"http://localhost:3000",
+			"http://127.0.0.1:5173",
+			"http://127.0.0.1:3000",
+		}
+		
+		// Check if origin is allowed
+		allowed := false
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				allowed = true
+				break
+			}
+		}
+		
+		// Set CORS headers
+		if allowed {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else if origin == "" {
+			// Allow requests without origin (like curl)
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+		
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		// Handle preflight OPTIONS requests
 		if r.Method == http.MethodOptions {
@@ -194,7 +220,7 @@ func (r *RPCServer) Start(addr string) {
 		}
 
 		// Add balance to the user's address
-		r.chain.State[rb.UserId] += rb.Amount
+		r.chain.AddBalance(rb.UserId, rb.Amount)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
@@ -218,7 +244,7 @@ func (r *RPCServer) Start(addr string) {
 		}
 
 		// Reset balance to 0
-		r.chain.State[rb.Address] = 0
+		r.chain.SetBalance(rb.Address, 0)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
@@ -227,26 +253,47 @@ func (r *RPCServer) Start(addr string) {
 	})
 
 	// faucet endpoint
-	mux.HandleFunc("/api/faucet", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+	mux.HandleFunc("/api/faucet", func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != http.MethodPost {
 			http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 
-		var req struct {
+		var reqBody struct {
 			Address string `json:"address"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if err := json.NewDecoder(req.Body).Decode(&reqBody); err != nil {
 			http.Error(w, `{"error":"Invalid JSON"}`, http.StatusBadRequest)
 			return
 		}
 
+		if reqBody.Address == "" {
+			http.Error(w, `{"error":"Address is required"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Rate limiting check (optional: prevent spam)
+		faucetRequests.mu.Lock()
+		lastRequest, exists := faucetRequests.last[reqBody.Address]
+		if exists && time.Since(lastRequest) < 1*time.Minute {
+			faucetRequests.mu.Unlock()
+			http.Error(w, `{"error":"Please wait 1 minute between faucet requests"}`, http.StatusTooManyRequests)
+			return
+		}
+		faucetRequests.last[reqBody.Address] = time.Now()
+		faucetRequests.mu.Unlock()
+
+		// Actually add balance to the chain state
+		faucetAmount := 50
+		r.chain.AddBalance(reqBody.Address, faucetAmount)
+		newBalance := r.chain.GetBalance(reqBody.Address)
+
 		resp := map[string]interface{}{
-			"address": req.Address,
-			"amount":  50,
-			"balance": 50,
+			"address": reqBody.Address,
+			"amount":  faucetAmount,
+			"balance": newBalance,
 			"status":  "ok",
 		}
 
