@@ -287,7 +287,10 @@ func (r *RPCServer) Start(addr string) {
 
 		// Actually add balance to the chain state
 		faucetAmount := 50
-		r.chain.AddBalance(reqBody.Address, faucetAmount)
+		if err := r.chain.AddBalance(reqBody.Address, faucetAmount); err != nil {
+			http.Error(w, `{"error":"Failed to update balance: `+err.Error()+`"}`, http.StatusInternalServerError)
+			return
+		}
 		newBalance := r.chain.GetBalance(reqBody.Address)
 
 		resp := map[string]interface{}{
