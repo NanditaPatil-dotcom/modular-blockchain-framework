@@ -65,9 +65,7 @@ func mine(b core.Block, diff int) (uint64, string) {
 		if hs[:diff] == strings.Repeat("0", diff) {
 			return nonce, hs
 		}
-		if nonce%1000000 == 0 {
-			break
-		} // avoid infinite loop in prototype
+		// Remove the break condition to allow mining to continue until found
 	}
 	return nonce, fmt.Sprintf("%x", sha256.Sum256([]byte(strconv.FormatUint(nonce, 10))))
 }

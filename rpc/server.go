@@ -3,25 +3,26 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
+	"modular-blockchain-framework/core"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 	"sync"
-	"modular-blockchain-framework/core"
-	"github.com/ethereum/go-ethereum/crypto"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
-var faucetRequests = struct{
-    mu sync.Mutex
-    last map[string]time.Time
-}{ last: make(map[string]time.Time) }
+var faucetRequests = struct {
+	mu   sync.Mutex
+	last map[string]time.Time
+}{last: make(map[string]time.Time)}
 
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		
+
 		// Allow localhost for development and production domain
 		allowedOrigins := []string{
 			"http://localhost:5173",
@@ -29,7 +30,7 @@ func enableCORS(next http.Handler) http.Handler {
 			"http://127.0.0.1:5173",
 			"http://127.0.0.1:3000",
 		}
-		
+
 		// Check if origin is allowed
 		allowed := false
 		for _, allowedOrigin := range allowedOrigins {
@@ -38,7 +39,7 @@ func enableCORS(next http.Handler) http.Handler {
 				break
 			}
 		}
-		
+
 		// Set CORS headers
 		if allowed {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -46,7 +47,7 @@ func enableCORS(next http.Handler) http.Handler {
 			// Allow requests without origin (like curl)
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
-		
+
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -128,12 +129,12 @@ func (r *RPCServer) Start(addr string) {
 
 	// root handler
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{
-        "status":  "ok",
-        "message": "RPC server is alive and speaking JSON",
-    })
-})
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "ok",
+			"message": "RPC server is alive and speaking JSON",
+		})
+	})
 
 	// get balance
 	mux.HandleFunc("/balance", func(w http.ResponseWriter, req *http.Request) {
@@ -223,7 +224,7 @@ func (r *RPCServer) Start(addr string) {
 		r.chain.AddBalance(rb.UserId, rb.Amount)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
+			"success":    true,
 			"newBalance": r.chain.GetBalance(rb.UserId),
 		})
 	})
@@ -247,7 +248,7 @@ func (r *RPCServer) Start(addr string) {
 		r.chain.SetBalance(rb.Address, 0)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": true,
+			"success":    true,
 			"newBalance": r.chain.GetBalance(rb.Address),
 		})
 	})
@@ -287,10 +288,7 @@ func (r *RPCServer) Start(addr string) {
 
 		// Actually add balance to the chain state
 		faucetAmount := 50
-		if err := r.chain.AddBalance(reqBody.Address, faucetAmount); err != nil {
-			http.Error(w, `{"error":"Failed to update balance: `+err.Error()+`"}`, http.StatusInternalServerError)
-			return
-		}
+		r.chain.AddBalance(reqBody.Address, faucetAmount)
 		newBalance := r.chain.GetBalance(reqBody.Address)
 
 		resp := map[string]interface{}{
