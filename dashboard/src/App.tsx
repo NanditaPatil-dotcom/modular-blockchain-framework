@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import Header from './components/Header';
-import WalletCard from './components/WalletCard';
 import Terminal from './components/Terminal';
 import TxForm from './components/TxForm';
 import BlocksList from './components/BlocksList';
@@ -24,7 +23,6 @@ function App() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <WalletCard />
             <Terminal />
             <TxForm rpcUrl={rpcUrl} onTransactionSent={() => {}} />
           </motion.div>

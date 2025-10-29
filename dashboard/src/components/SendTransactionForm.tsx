@@ -91,6 +91,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
         signature: ''
       })
     } catch (err) {
+      console.error('Transaction error:', err)
       setToast({
         message: err instanceof Error ? err.message : 'Failed to submit transaction',
         type: 'error'
@@ -155,7 +156,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
         )}
         <div>
           <label htmlFor="to" className="block text-sm font-medium text-gray-700 mb-1">
-            To
+            To (Recipient Address)
           </label>
           <input
             id="to"
@@ -163,6 +164,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
             type="text"
             value={formData.to}
             onChange={handleChange}
+            placeholder="Enter recipient's public wallet address"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
