@@ -21,9 +21,7 @@ func NewChain() *Chain {
 
 	// Initialize genesis balances (demo/testnet coins)
 	c.State["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"] = 1000 // demo address 1
-	c.State["0x742d35Cc6634C0532925a3b844Bc454e4438f44f"] = 1000 // demo address 2
-	c.State["nandita"] = 100                                     // legacy for compatibility
-	c.State["aanya"] = 0                                         // legacy for compatibility
+	c.State["0x742d35Cc6634C0532925a3b844Bc454e4438f44f"] = 1000 // demo address
 
 	return c
 }

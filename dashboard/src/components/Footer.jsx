@@ -9,7 +9,7 @@ export default function Footer() {
 
         <div className="flex items-center gap-6">
           <a
-            href="https://github.com/your-repo/modular-blockchain-framework"
+            href="https://github.com/NanditaPatil-dotcom/modular-blockchain-framework"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-sm text-[var(--accent-teal)] hover:text-[var(--accent-pink)] transition-colors"

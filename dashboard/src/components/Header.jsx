@@ -25,7 +25,7 @@ export default function Header() {
     <header className="glass-card p-6 mb-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-[var(--accent-teal)] to-[var(--accent-pink)] bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold text-white">
             Modular Blockchain Framework
           </h1>
           <div className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-secondary)] rounded-full text-sm">

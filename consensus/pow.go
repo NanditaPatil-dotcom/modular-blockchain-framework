@@ -3,11 +3,10 @@ package consensus
 import (
 	"crypto/sha256"
 	"fmt"
+	"modular-blockchain-framework/core"
 	"strconv"
 	"strings"
 	"time"
-
-	"modular-blockchain-framework/core"
 )
 
 type PoW struct {
@@ -24,7 +23,7 @@ func (p *PoW) Start() error {
 		for p.running {
 			// simple loop: gather pending txs from a global mempool (you'll implement)
 			// Here we'll fake an empty block every 5s for demo
-			time.Sleep(5 * time.Second)
+			time.Sleep(9 * time.Second)
 			b := core.Block{
 				Number:       uint64(len(p.chain.Blocks)),
 				PrevHash:     p.chain.Blocks[len(p.chain.Blocks)-1].Hash,

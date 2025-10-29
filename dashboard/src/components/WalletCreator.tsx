@@ -6,7 +6,7 @@ interface Wallet {
   privateKey: string
 }
 
-export default function WalletCreator() {
+export default function WalletCreator({ rpcUrl }: { rpcUrl: string }) {
   const [wallet, setWallet] = useState<Wallet | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -35,6 +35,15 @@ export default function WalletCreator() {
       // Save to localStorage
       localStorage.setItem('wallet', JSON.stringify(walletData))
       setWallet(walletData)
+
+      // Call faucet to add initial balance
+      await fetch(`${rpcUrl}/api/faucet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ address: walletData.address })
+      })
     } catch (error) {
       console.error('Failed to generate wallet:', error)
     } finally {
@@ -48,20 +57,20 @@ export default function WalletCreator() {
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-      <h2 className="text-xl font-semibold mb-4 text-white">💳 Create Wallet</h2>
+      <h2 className="text-xl font-semibold mb-4 text-white">Create Wallet</h2>
       <div className="space-y-4">
         <button
           onClick={generateWallet}
           disabled={loading}
-          className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+          className="w-full bg-teal-600 text-white py-2 px-4 rounded-md hover:bg-teal-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
         >
-          {loading ? '🔄 Generating...' : '🆕 Generate New Wallet'}
+          {loading ? 'Generating...' : 'Generate New Wallet'}
         </button>
 
         {wallet && (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-white-700 mb-1">
                 Address
               </label>
               <div className="flex gap-2">
@@ -69,11 +78,11 @@ export default function WalletCreator() {
                   type="text"
                   value={wallet.address}
                   readOnly
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  className="flex-1 px-3 py-2 border border-gray-700 rounded-md text-white"
                 />
                 <button
                   onClick={() => copyToClipboard(wallet.address)}
-                  className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  className="px-3 py-2 bg-teal-700 text-white-700 rounded-md hover:bg-teal-700"
                 >
                   Copy
                 </button>
@@ -81,7 +90,7 @@ export default function WalletCreator() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-white-700 mb-1">
                 Private Key
               </label>
               <div className="flex gap-2">
@@ -89,18 +98,15 @@ export default function WalletCreator() {
                   type="password"
                   value={wallet.privateKey}
                   readOnly
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  className="flex-1 px-3 py-2 border border-gray-700 rounded-md text-white"
                 />
                 <button
                   onClick={() => copyToClipboard(wallet.privateKey)}
-                  className="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  className="px-3 py-2 bg-teal-700 text-white-700 rounded-md hover:bg-teal-700"
                 >
                   Copy
                 </button>
               </div>
-              <p className="text-xs text-red-600 mt-1">
-                ⚠️ Keep your private key secure and never share it!
-              </p>
             </div>
           </div>
         )}

@@ -9,9 +9,14 @@ export async function signTransaction(txPayload: { from: string; to: string; amo
     }
 
     const wallet = new ethers.Wallet(cleanPrivateKey)
-    // Canonical payload: JSON.stringify the transaction object
-    const payload = JSON.stringify(txPayload)
-    const signature = await wallet.signMessage(payload)
+    // Create canonical message that matches backend format: {"from":"...","to":"...","amount":123,"nonce":456}
+    const message = JSON.stringify(txPayload)
+    
+    // Hash the message with Keccak256 (same as backend)
+    const messageHash = ethers.keccak256(ethers.toUtf8Bytes(message))
+    
+    // Sign the hash directly (not the message, to avoid Ethereum message prefix)
+    const signature = wallet.signingKey.sign(messageHash).serialized
     return signature
   } catch (error) {
     console.error('Error signing transaction:', error)

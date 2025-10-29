@@ -34,12 +34,14 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     }))
   }
 
-  const loadWallet = () => {
+  const loadWallet = async () => {
     const stored = localStorage.getItem('wallet')
     if (stored) {
       const parsedWallet = JSON.parse(stored)
       setWallet(parsedWallet)
       setFormData(prev => ({ ...prev, from: parsedWallet.publicKey }))
+
+
     }
   }
 
@@ -56,7 +58,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     try {
       const from = wallet ? wallet.address : formData.from
       const privKey = wallet ? wallet.privateKey : privateKey
-      const amount = parseFloat(formData.amount)
+      const amount = parseInt(formData.amount)
       const nonce = parseInt(formData.nonce)
 
       // Client-side signing only - private key never sent to server
@@ -105,13 +107,13 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     (wallet || (formData.from.trim() && privateKey.trim()))
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
       <h2 className="text-xl font-semibold mb-4">Send Transaction</h2>
       <div className="mb-4">
         <button
           type="button"
           onClick={loadWallet}
-          className="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 text-sm"
+          className="bg-teal-700 text-white py-1 px-3 rounded-md hover:bg-teal-600 text-sm"
         >
           Load Saved Wallet
         </button>
@@ -121,7 +123,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
         {!wallet && (
           <>
             <div>
-              <label htmlFor="from" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="from" className="block text-sm font-medium text-white-700 mb-1">
                 From (Address)
               </label>
               <input
@@ -130,12 +132,12 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
                 type="text"
                 value={formData.from}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
             <div>
-              <label htmlFor="privateKey" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="privateKey" className="block text-sm font-medium text-white-700 mb-1">
                 Private Key
               </label>
               <input
@@ -143,7 +145,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
                 type="password"
                 value={privateKey}
                 onChange={(e) => setPrivateKey(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -155,7 +157,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
           </div>
         )}
         <div>
-          <label htmlFor="to" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="to" className="block text-sm font-medium text-white-700 mb-1">
             To (Recipient Address)
           </label>
           <input
@@ -165,12 +167,12 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
             value={formData.to}
             onChange={handleChange}
             placeholder="Enter recipient's public wallet address"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
         <div>
-          <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="amount" className="block text-sm font-medium text-white-700 mb-1">
             Amount
           </label>
           <input
@@ -180,12 +182,12 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
             step="0.01"
             value={formData.amount}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
         <div>
-          <label htmlFor="nonce" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="nonce" className="block text-sm font-medium text-white-700 mb-1">
             Nonce
           </label>
           <input
@@ -194,14 +196,14 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
             type="number"
             value={formData.nonce}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
         <button
           type="submit"
           disabled={loading || !isFormValid}
-          className="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="w-full bg-teal-600 text-white py-2 px-4 rounded-md hover:bg-teal-600 disabled:bg-teal-600 disabled:cursor-not-allowed"
         >
           {loading ? 'Submitting...' : 'Submit Transaction'}
         </button>

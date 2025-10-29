@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Blocks, RefreshCw } from 'lucide-react';
 import { getBlocks } from '../lib/rpc';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import BlockCard from './BlockCard';
 
 interface Transaction {
@@ -86,19 +86,6 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
       animate={{ opacity: 1, y: 0 }}
       className="glass-card p-6"
     >
-      {/* New Block Banner */}
-      <AnimatePresence>
-        {newBlockBanner && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-center font-semibold"
-          >
-            🧱 New block added to the chain!
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Header with counters */}
       <div className="flex items-center justify-between mb-6">
@@ -151,9 +138,14 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
             filteredBlocks.map((block, index) => (
               <motion.div
                 key={block.Number}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ 
+                  delay: index * 0.08,
+                  type: "tween",
+                  duration: 0.6,
+                  ease: "easeOut"
+                }}
                 layout
               >
                 <BlockCard
@@ -165,7 +157,7 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
             ))
           ) : (
             <div className="text-center py-8 text-[var(--text-secondary)]">
-              {searchQuery ? 'No block found 😢' : 'No blocks available'}
+              {searchQuery ? 'No block found' : 'No blocks available'}
             </div>
           )}
         </motion.div>
@@ -173,7 +165,7 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
 
       {blocks.length > 0 && (
         <div className="mt-4 text-center text-sm text-[var(--text-secondary)]">
-          Showing {filteredBlocks.length} of {blocks.length} blocks • Auto-refreshing every 5 seconds
+          Showing {filteredBlocks.length} of {blocks.length} blocks
         </div>
       )}
 
@@ -181,7 +173,7 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
       <motion.button
         onClick={fetchBlocks}
         disabled={loading}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-[var(--accent-teal)] to-[var(--accent-green)] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50"
+        className="fixed bottom-6 right-6 w-14 h-14 bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl hover:bg-teal-700 transition-all duration-300 flex items-center justify-center z-50"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         aria-label="Refresh blocks"

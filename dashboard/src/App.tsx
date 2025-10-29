@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import Header from './components/Header';
 import Terminal from './components/Terminal';
-import TxForm from './components/TxForm';
+import SendTransactionForm from './components/SendTransactionForm';
+import WalletCreator from './components/WalletCreator';
 import BlocksList from './components/BlocksList';
 import MempoolBadge from './components/MempoolBadge';
 import Footer from './components/Footer';
@@ -23,8 +24,9 @@ function App() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
+            <WalletCreator rpcUrl={rpcUrl} />
             <Terminal />
-            <TxForm rpcUrl={rpcUrl} onTransactionSent={() => {}} />
+            <SendTransactionForm rpcUrl={rpcUrl} />
           </motion.div>
 
           {/* Right Column - Explorer */}
