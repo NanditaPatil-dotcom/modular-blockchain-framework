@@ -243,7 +243,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
         </button>
       </form>
       {toast && (
-        <div className={`mt-4 p-3 rounded-md ${toast.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <div className={`mt-4 p-3 rounded-md ${toast.type === 'success' ? 'bg-teal-600 text-white-800' : 'bg-red-100 text-red-800'}`}>
           {toast.message}
         </div>
       )}
