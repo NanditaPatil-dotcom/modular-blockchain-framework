@@ -4,40 +4,52 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"modular-blockchain-framework/core"
-	"strconv"
 	"strings"
 	"time"
 )
 
 type PoW struct {
 	chain      *core.Chain
+	mempool    *core.Mempool
 	difficulty int // small number for dev, e.g., 2
 	running    bool
 }
 
-func NewPoW(c *core.Chain, diff int) *PoW { return &PoW{chain: c, difficulty: diff} }
+func NewPoW(c *core.Chain, m *core.Mempool, diff int) *PoW {
+	return &PoW{chain: c, mempool: m, difficulty: diff}
+}
 
 func (p *PoW) Start() error {
 	p.running = true
 	go func() {
 		for p.running {
-			// simple loop: gather pending txs from a global mempool (you'll implement)
-			// Here we'll fake an empty block every 5s for demo
-			time.Sleep(9 * time.Second)
-			b := core.Block{
-				Number:       uint64(len(p.chain.Blocks)),
-				PrevHash:     p.chain.Blocks[len(p.chain.Blocks)-1].Hash,
-				Timestamp:    time.Now().Unix(),
-				Transactions: []core.Transaction{}, // wire your mempool
+			if !p.mine() {
+				time.Sleep(time.Second)
 			}
-			nonce, hash := mine(b, p.difficulty)
-			b.Nonce = nonce
-			b.Hash = hash
-			p.chain.AddBlock(b)
-			fmt.Println("Mined block", b.Number, hash)
 		}
 	}()
 	return nil
+}
+
+func (p *PoW) mine() bool {
+	txs := p.mempool.PendingTransactions()
+	if len(txs) == 0 {
+		return false
+	}
+	last := p.chain.LatestBlock()
+	block := core.Block{
+		Number:       last.Number + 1,
+		PrevHash:     last.Hash,
+		Timestamp:    time.Now().Unix(),
+		Transactions: txs,
+	}
+	nonce, hash := mineBlock(block, p.difficulty)
+	block.Nonce = nonce
+	block.Hash = hash
+	p.chain.AddBlock(block)
+	p.mempool.Clear()
+	fmt.Println("Mined block", block.Number, hash)
+	return true
 }
 
 func (p *PoW) Stop() error { p.running = false; return nil }
@@ -54,17 +66,14 @@ func (p *PoW) ValidateBlock(b core.Block) bool {
 	return hs[:p.difficulty] == strings.Repeat("0", p.difficulty)
 }
 
-func mine(b core.Block, diff int) (uint64, string) {
+func mineBlock(b core.Block, diff int) (uint64, string) {
 	var nonce uint64
 	for {
 		nonce++
 		h := sha256.Sum256([]byte(fmt.Sprintf("%d%s%d%d", b.Number, b.PrevHash, nonce, b.Timestamp)))
 		hs := fmt.Sprintf("%x", h)
-		// VERY small difficulty check: starts with diff zeros
 		if hs[:diff] == strings.Repeat("0", diff) {
 			return nonce, hs
 		}
-		// Remove the break condition to allow mining to continue until found
 	}
-	return nonce, fmt.Sprintf("%x", sha256.Sum256([]byte(strconv.FormatUint(nonce, 10))))
 }

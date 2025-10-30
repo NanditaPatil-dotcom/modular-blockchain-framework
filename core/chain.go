@@ -37,6 +37,12 @@ func (c *Chain) AddBlock(b Block) {
 	}
 }
 
+func (c *Chain) LatestBlock() Block {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.Blocks[len(c.Blocks)-1]
+}
+
 func (c *Chain) GetBalance(addr string) int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
