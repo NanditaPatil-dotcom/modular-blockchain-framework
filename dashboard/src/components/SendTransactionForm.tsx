@@ -10,8 +10,9 @@ interface TransactionData {
 }
 
 interface Wallet {
-  address: string
+  address?: string
   privateKey: string
+  publicKey?: string
 }
 
 export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
@@ -26,6 +27,8 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
   const [privateKey, setPrivateKey] = useState('')
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [balance, setBalance] = useState<number | null>(null)
+  const [balanceLoading, setBalanceLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -34,14 +37,35 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     }))
   }
 
+  const fetchWalletBalance = async (address: string) => {
+    if (!address) {
+      setBalance(null)
+      return
+    }
+
+    setBalanceLoading(true)
+    try {
+      const response = await fetch(`${rpcUrl}/balance?addr=${encodeURIComponent(address)}`)
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      setBalance(typeof data.balance === 'number' ? data.balance : null)
+    } catch {
+      setBalance(null)
+    } finally {
+      setBalanceLoading(false)
+    }
+  }
+
   const loadWallet = async () => {
     const stored = localStorage.getItem('wallet')
     if (stored) {
-      const parsedWallet = JSON.parse(stored)
+      const parsedWallet: Wallet = JSON.parse(stored)
       setWallet(parsedWallet)
-      setFormData(prev => ({ ...prev, from: parsedWallet.publicKey }))
-
-
+      setFormData(prev => ({ ...prev, from: parsedWallet.publicKey || parsedWallet.address || '' }))
+      const address = parsedWallet.address || parsedWallet.publicKey || ''
+      await fetchWalletBalance(address)
     }
   }
 
@@ -56,7 +80,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
     setToast(null)
 
     try {
-      const from = wallet ? wallet.address : formData.from
+      const from = wallet ? wallet.address || wallet.publicKey || '' : formData.from
       const privKey = wallet ? wallet.privateKey : privateKey
       const amount = parseInt(formData.amount)
       const nonce = parseInt(formData.nonce)
@@ -85,8 +109,11 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
       }
 
       setToast({ message: 'Transaction submitted successfully!', type: 'success' })
+      if (wallet && from) {
+        await fetchWalletBalance(from)
+      }
       setFormData({
-        from: wallet ? wallet.address : '',
+        from: wallet ? (wallet.address || wallet.publicKey || '') : '',
         to: '',
         amount: '',
         nonce: '',
@@ -108,7 +135,14 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
-      <h2 className="text-xl font-semibold mb-4">Send Transaction</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Send Transaction</h2>
+        {wallet && (
+          <div className="text-sm text-gray-300">
+            {balanceLoading ? 'Loading balance...' : `Balance: ${balance ?? '—'}`}
+          </div>
+        )}
+      </div>
       <div className="mb-4">
         <button
           type="button"
@@ -153,7 +187,7 @@ export default function SendTransactionForm({ rpcUrl }: { rpcUrl: string }) {
         )}
         {wallet && (
           <div className="bg-gray-50 p-3 rounded">
-            <div className="text-sm text-gray-600">From: {wallet.address}</div>
+            <div className="text-sm text-gray-600">From: {wallet.address || wallet.publicKey || '—'}</div>
           </div>
         )}
         <div>

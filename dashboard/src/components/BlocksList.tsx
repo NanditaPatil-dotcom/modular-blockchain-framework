@@ -25,7 +25,6 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [expandedBlocks, setExpandedBlocks] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [newBlockBanner, setNewBlockBanner] = useState(false);
   const [previousBlockCount, setPreviousBlockCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -40,10 +39,8 @@ export default function BlocksList({ rpcUrl }: { rpcUrl: string }) {
 
       // Check for new blocks
       if (sortedBlocks.length > previousBlockCount) {
-        setNewBlockBanner(true);
-        setTimeout(() => setNewBlockBanner(false), 3000); // Hide banner after 3 seconds
+        setPreviousBlockCount(sortedBlocks.length);
       }
-      setPreviousBlockCount(sortedBlocks.length);
 
       setBlocks(sortedBlocks);
     } catch (err) {
