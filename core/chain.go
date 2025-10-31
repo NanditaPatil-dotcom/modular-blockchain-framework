@@ -16,24 +16,26 @@ func NewChain() *Chain {
 		State:  make(map[string]int),
 		Nonces: make(map[string]uint64),
 	}
-	// genesis
-	c.Blocks = append(c.Blocks, Block{Number: 0, PrevHash: "", Timestamp: 0})
-
-	// Initialize genesis balances (demo/testnet coins)
-	c.State["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"] = 1000 // demo address 1
-	c.State["0x742d35Cc6634C0532925a3b844Bc454e4438f44f"] = 1000 // demo address
-
+	c.CreateGenesisIfNotExists()
 	return c
 }
 
 func (c *Chain) AddBlock(b Block) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.State == nil {
+		c.State = make(map[string]int)
+	}
+	if c.Nonces == nil {
+		c.Nonces = make(map[string]uint64)
+	}
 	c.Blocks = append(c.Blocks, b)
-	// apply txs to state (naive)
 	for _, tx := range b.Transactions {
 		c.State[tx.From] -= tx.Amount
 		c.State[tx.To] += tx.Amount
+		if tx.Nonce > c.Nonces[tx.From] {
+			c.Nonces[tx.From] = tx.Nonce
+		}
 	}
 }
 
@@ -71,4 +73,43 @@ func (c *Chain) SetNonce(addr string, nonce uint64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.Nonces[addr] = nonce
+}
+
+func (c *Chain) SetBlocks(blocks []Block) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.Blocks = append([]Block(nil), blocks...)
+}
+
+func (c *Chain) RebuildStateFromBlocks() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.State = make(map[string]int)
+	c.Nonces = make(map[string]uint64)
+	for _, b := range c.Blocks {
+		for _, tx := range b.Transactions {
+			c.State[tx.From] -= tx.Amount
+			c.State[tx.To] += tx.Amount
+			if tx.Nonce > c.Nonces[tx.From] {
+				c.Nonces[tx.From] = tx.Nonce
+			}
+		}
+	}
+}
+
+func (c *Chain) CreateGenesisIfNotExists() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.State == nil {
+		c.State = make(map[string]int)
+	}
+	if c.Nonces == nil {
+		c.Nonces = make(map[string]uint64)
+	}
+	if len(c.Blocks) > 0 {
+		return
+	}
+	c.Blocks = append(c.Blocks, Block{Number: 0, PrevHash: "", Timestamp: 0})
+	c.State["0x742d35Cc6634C0532925a3b844Bc454e4438f44e"] = 1000
+	c.State["0x742d35Cc6634C0532925a3b844Bc454e4438f44f"] = 1000
 }
