@@ -37,10 +37,16 @@ func (p *PoW) mine() bool {
 		return false
 	}
 	last := p.chain.LatestBlock()
+	timestamp := time.Now().Unix()
+	for i := range txs {
+		if txs[i].Timestamp == 0 {
+			txs[i].Timestamp = timestamp
+		}
+	}
 	block := core.Block{
 		Number:       last.Number + 1,
 		PrevHash:     last.Hash,
-		Timestamp:    time.Now().Unix(),
+		Timestamp:    timestamp,
 		Transactions: txs,
 	}
 	nonce, hash := mineBlock(block, p.difficulty)
