@@ -3,7 +3,9 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"modular-blockchain-framework/core"
+	"modular-blockchain-framework/db"
 	"net/http"
 	"os"
 	"strings"
@@ -220,12 +222,14 @@ func (r *RPCServer) Start(addr string) {
 			return
 		}
 
-		// Add balance to the user's address
-		r.chain.AddBalance(rb.UserId, rb.Amount)
+		newBalance := r.chain.AddBalance(rb.UserId, rb.Amount)
+		if err := db.UpsertWalletBalance(rb.UserId, newBalance); err != nil {
+			log.Println("warning: failed to persist wallet balance:", err)
+		}
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success":    true,
-			"newBalance": r.chain.GetBalance(rb.UserId),
+			"newBalance": newBalance,
 		})
 	})
 
@@ -244,12 +248,14 @@ func (r *RPCServer) Start(addr string) {
 			return
 		}
 
-		// Reset balance to 0
-		r.chain.SetBalance(rb.Address, 0)
+		newBalance := r.chain.SetBalance(rb.Address, 0)
+		if err := db.UpsertWalletBalance(rb.Address, newBalance); err != nil {
+			log.Println("warning: failed to persist wallet balance:", err)
+		}
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success":    true,
-			"newBalance": r.chain.GetBalance(rb.Address),
+			"newBalance": newBalance,
 		})
 	})
 
@@ -286,10 +292,11 @@ func (r *RPCServer) Start(addr string) {
 		faucetRequests.last[reqBody.Address] = time.Now()
 		faucetRequests.mu.Unlock()
 
-		// Actually add balance to the chain state
 		faucetAmount := 50
-		r.chain.AddBalance(reqBody.Address, faucetAmount)
-		newBalance := r.chain.GetBalance(reqBody.Address)
+		newBalance := r.chain.AddBalance(reqBody.Address, faucetAmount)
+		if err := db.UpsertWalletBalance(reqBody.Address, newBalance); err != nil {
+			log.Println("warning: failed to persist wallet balance:", err)
+		}
 
 		resp := map[string]interface{}{
 			"address": reqBody.Address,
