@@ -11,6 +11,7 @@ type Transaction struct {
 	To        string
 	Amount    int
 	Nonce     uint64
+	Timestamp int64
 	Signature string // simplified for prototype (in prod use real cryptography)
 }
 
