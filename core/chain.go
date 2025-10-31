@@ -51,16 +51,18 @@ func (c *Chain) GetBalance(addr string) int {
 	return c.State[addr]
 }
 
-func (c *Chain) AddBalance(addr string, amount int) {
+func (c *Chain) AddBalance(addr string, amount int) int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.State[addr] += amount
+	return c.State[addr]
 }
 
-func (c *Chain) SetBalance(addr string, amount int) {
+func (c *Chain) SetBalance(addr string, amount int) int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.State[addr] = amount
+	return c.State[addr]
 }
 
 func (c *Chain) GetNonce(addr string) uint64 {

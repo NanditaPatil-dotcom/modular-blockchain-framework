@@ -69,6 +69,12 @@ func GetLatestBlockNumber() (int, error) {
 	return n, err
 }
 
+func UpsertWalletBalance(address string, balance int) error {
+	_, err := DB.Exec(`INSERT INTO wallets(address,balance,created_at) VALUES($1,$2,now())
+	                   ON CONFLICT (address) DO UPDATE SET balance = $2`, address, balance)
+	return err
+}
+
 func LoadChain() ([]core.Block, error) {
 	rows, err := DB.Query(`SELECT number, hash, prev_hash, nonce, extract(epoch from timestamp)::bigint as ts
 	                        FROM blocks ORDER BY number ASC`)
