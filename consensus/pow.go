@@ -3,7 +3,9 @@ package consensus
 import (
 	"crypto/sha256"
 	"fmt"
+	"log"
 	"modular-blockchain-framework/core"
+	"modular-blockchain-framework/db"
 	"strings"
 	"time"
 )
@@ -53,6 +55,9 @@ func (p *PoW) mine() bool {
 	block.Nonce = nonce
 	block.Hash = hash
 	p.chain.AddBlock(block)
+	if err := db.InsertBlock(&block); err != nil {
+		log.Println("warning: failed to persist block:", err)
+	}
 	p.mempool.Clear()
 	fmt.Println("Mined block", block.Number, hash)
 	return true
