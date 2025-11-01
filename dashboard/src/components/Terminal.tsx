@@ -130,11 +130,11 @@ export default function Terminal() {
     const signature = await signTransaction(txPayload, privateKey);
 
     await submitTransaction({ ...txPayload, signature });
-    return `✅ Transaction created
-🔍 Broadcasting to network...
-✅ Transaction verified
-⛓️  Added to mempool
-📦 TX Hash: ${signature.slice(0, 16)}...`;
+    return `Transaction created
+Broadcasting to network...
+Transaction verified
+Added to mempool
+TX Hash: ${signature.slice(0, 16)}...`;
   };
 
   const executeBalance = async (address: string): Promise<string> => {
@@ -147,7 +147,7 @@ export default function Terminal() {
     if (!stored) throw new Error('No wallet found. Create one first.');
     const walletData = JSON.parse(stored);
     const result = await addBalance(walletData.address, amount);
-    return `✅ Added ${amount} testcoins. New balance: ${result.newBalance}`;
+    return `Added ${amount} testcoins. New balance: ${result.newBalance}`;
   };
 
   const getHelpText = () => {
@@ -226,7 +226,7 @@ Examples:
             animate={{ opacity: 1 }}
             className="text-[var(--accent-pink)] ml-4 animate-pulse"
           >
-            ⏳ Processing transaction...
+            Processing transaction...
           </motion.div>
         )}
       </div>

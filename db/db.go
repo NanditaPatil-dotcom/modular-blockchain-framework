@@ -37,5 +37,5 @@ func Init() {
 	if err := DB.Ping(); err != nil {
 		log.Fatalf("db ping failed: %v", err)
 	}
-	log.Println("✅ Connected to Supabase/Postgres")
+	log.Println("Connected to Supabase")
 }
