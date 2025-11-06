@@ -1,6 +1,21 @@
 # modular-blockchain-framework
 
 A modular blockchain framework written in Go, featuring core blockchain components, consensus mechanisms, and extensible modules.
+# to use the repo
+1) fork the repo
+2) clone it
+   ```
+   git clone https://github.com/NanditaPatil-dotcom/modular-blockchain-framework/.git
+   ```
+3) in the project root(backend):
+   ```
+   go run cmd/node/main.go
+    ```
+4) for the frontend :
+   ```
+   cd dashboard
+   npm run dev
+   ```
 
 ## Transaction Flow Example
 **Example: Y1 giving 10 bucks to Y2**

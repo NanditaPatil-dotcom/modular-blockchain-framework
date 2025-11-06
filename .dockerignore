@@ -1,0 +1,31 @@
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Dependency directories
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+package-lock.json
+
+# Git
+.git
+.gitignore
+
+# Build artifacts
+dist
+build
+.cache
+.next
+
+# Editor settings
+.vscode
+.idea
+.DS_Store
+
+# Docker itself
+Dockerfile
+docker-compose.yml
