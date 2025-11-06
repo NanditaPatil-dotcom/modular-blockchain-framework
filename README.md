@@ -16,6 +16,11 @@ A modular blockchain framework written in Go, featuring core blockchain componen
    cd dashboard
    npm run dev
    ```
+# to access the container 
+```
+docker pull nanditanpatil/modular-blockchain-framework:latest
+docker run -p 8080:8080 nanditanpatil/modular-blockchain-framework:latest
+```
 
 ## Transaction Flow Example
 **Example: Y1 giving 10 bucks to Y2**
